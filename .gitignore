@@ -1,17 +1,8 @@
-# Python
+profile.yaml
 __pycache__/
 *.pyc
-
-# Virtual environment
-.venv/
-
-# IDE
-.idea/
-
-# Environment / private assets
-.env
-assets/
-
-# Generated / runtime data
 data/
-
+assets/
+.venv/
+.idea/
+.env
