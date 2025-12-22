@@ -1,143 +1,187 @@
-# LIA Finder AI Assistant
+LIA Finder AI Assistant 🤖🇸🇪
 
-A Python-based assistant that helps discover **LIA (Lärande i Arbete)** opportunities in Sweden — with a focus on **Java / Java developer–related roles** — and prepares the groundwork for **AI-tailored applications**.
+LIA Finder AI Assistant is a Python-based tool designed to help Java developer students proactively find and prepare for LIA (Lärande i Arbete) opportunities in Sweden.
 
-The project is designed to run locally, be compliant with platform rules, and significantly reduce the manual effort involved in finding relevant LIA placements.
+The tool continuously monitors public job sources for LIA / praktik roles related to Java and Fullstack development, ranks relevant matches, and generates company-specific outreach material (emails, personal letters, LinkedIn messages) — all in a LinkedIn ToS–safe, manual-first workflow.
 
----
+✨ Key Features
+🔍 LIA Monitoring (Java-focused)
 
-## 🎯 Purpose
+Scans public, automation-friendly job sources (e.g. JobTech / Platsbanken)
 
-Finding relevant LIA placements (especially in software development) is time-consuming and noisy.  
-This tool aims to:
+Strong filtering for:
 
-- Automatically **discover LIA / praktik opportunities**
-- Filter out regular full-time jobs
-- Focus on **Java, backend, and JVM-related roles**
-- Rank listings by relevance
-- Prepare for **AI-generated, role-specific personal letters**
+LIA / praktik / YH-related roles
 
----
+Java, backend, and fullstack positions
 
-## 🔍 Current Capabilities (Phase 1)
+Scores and ranks listings by relevance
 
-### ✔ LIA Discovery
-- Fetches real job listings from **Platsbanken (Arbetsförmedlingen)** using the official JobTech JobSearch API
-- Searches specifically for:
-  - `LIA`
-  - `praktik`
-  - `lärande i arbete`
-  - `yrkeshögskola`
-  - `internship`
-- Supports:
-  - Stockholm-based roles
-  - Remote / hybrid roles
+Tracks previously seen ads to surface only new matches
 
-### ✔ Java-Focused Filtering
-Listings are ranked higher if they mention:
-- Java
-- Backend development
-- Software development keywords
-- LIA / YH terminology
+🔁 Continuous Monitor Mode
 
-Regular full-time developer roles are penalized or filtered out.
+Run once or
 
-### ✔ Ranking & Output
-- Listings are scored based on relevance
-- Results are shown in a clean terminal table
-- All results are saved to:
+Run as a daemon that checks automatically at a fixed interval (e.g. every 30 minutes)
 
+Ideal for long-term LIA tracking (e.g. 6–12 months ahead of start date)
 
----
+✉️ Outreach Builder (Automated, Personalised)
 
-## 🧠 Planned Features (Next Phases)
+For each target company, the tool generates:
 
-### 🔜 AI-Tailored Personal Letters
-- Base personal letter + CV
-- Automatically adjusted per LIA listing
-- Emphasis on Java / backend skills
-- Export as DOCX or PDF
+📧 Tailored outreach email (Swedish)
 
-### 🔜 Application Assistant
-- Per-listing application folders
-- Notes on how/where to apply
-- Follow-up reminders
+💬 LinkedIn DM text (manual send — no automation)
 
-### 🔜 Improved Matching
-- Skill-to-requirement matching
-- LIA period date validation
-- Company-specific ranking boosts
+📝 Personal letter (kort + standard, Swedish)
 
----
+📄 CV highlights addendum (DOCX)
 
-## 🛠 Tech Stack
+📎 Copies your CV (PDF) into each company folder
 
-- **Python 3.11**
-- `httpx` – HTTP client
-- `pydantic` – data modeling
-- `PyYAML` – configuration
-- `rich` – terminal UI
-- `python-docx` – document generation (planned)
-- JobTech **JobSearch API** (Platsbanken)
+All content is aligned to:
 
----
+Java / Fullstack focus
 
-## 📁 Project Structure
+Your education and projects
 
+Your personal writing tone
 
-LIA_FINDER_AI_ASSISTANT/
-├─ main.py
-├─ config.yaml
-├─ requirements.txt
-├─ README.md
-├─ src/
-│ ├─ config.py
-│ ├─ models.py
-│ ├─ discovery/
-│ ├─ ranking/
-│ ├─ letters/
-│ └─ storage/
-└─ data/
+🔗 LinkedIn Awareness (Safe & Manual)
 
+This project does not scrape LinkedIn (by design).
 
----
+Instead, it provides:
 
-## ⚙️ Setup & Run
+A global LinkedIn manual checklist with ready-to-use search queries
 
-### 1️⃣ Create virtual environment
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
+Company-specific LinkedIn checklists, including:
 
-3️⃣ Configure API access
+Suggested search phrases
 
-Create a .env file:
+Company name + LIA / praktik / Java combinations
 
-JOBTECH_API_KEY=your_jobtech_api_key_here
+This keeps your workflow:
 
-4️⃣ Run the assistant
+✅ Ethical
+
+✅ ToS-compliant
+
+✅ Low risk to your LinkedIn account
+
+🧠 Typical Workflow
+
+Run the monitor (once or continuously)
+
+Review newly found LIA opportunities
+
+Maintain a list of target companies
+
+Run the outreach builder
+
+Use generated material to:
+
+Send emails
+
+Send LinkedIn DMs manually
+
+Apply proactively (even before ads are published)
+
+🚀 How to Run
+1️⃣ Install dependencies
+pip install -r requirements.txt
+
+2️⃣ Configure
+
+Edit:
+
+config.yaml — search rules, LIA timing, LinkedIn queries
+
+companies.yaml — target companies
+
+profile.yaml — your personal data (❗ ignored by git)
+
+Place your CV here:
+
+assets/cv.pdf
+
+3️⃣ Run via PyCharm (recommended)
+
+Right-click main.py → Run
+
+Choose:
+
+1 Monitor once
+
+2 Outreach builder
+
+3 Monitor daemon (continuous)
+
+Or via terminal:
+
 python main.py
 
-📌 Notes on Compliance
+📂 Project Structure (simplified)
+LIA_FINDER_AI_ASSISTANT/
+├── main.py                     # Unified launcher
+├── outreach_build.py           # Outreach-only entry
+├── config.yaml                 # Search + LinkedIn config
+├── companies.yaml              # Target companies
+├── profile.yaml                # Personal data (gitignored)
+├── assets/
+│   └── cv.pdf
+├── data/
+│   ├── listings.json
+│   ├── seen_ads.json
+│   ├── linkedin_checklist.txt
+│   └── applications/
+│       └── Company_Name/
+│           ├── outreach_email.txt
+│           ├── linkedin_dm.txt
+│           ├── personligt_brev_*.docx
+│           ├── cv_highlights.docx
+│           └── cv.pdf
+└── src/
+    ├── discovery/
+    ├── ranking/
+    ├── outreach/
+    └── storage/
 
-No LinkedIn scraping or automated applications
+🛡️ Ethics & Safety
 
-Uses official APIs where available
+❌ No LinkedIn scraping
 
-Designed as an assistant, not a spam bot
+❌ No automated applications
 
-👤 Target Profile
+❌ No credential usage
 
-This project is tailored for:
+✅ Manual-first, assistive tooling
 
-YH students
+✅ Designed for students and proactive outreach
 
-Java / backend developer tracks
+🎯 Target Audience
 
-LIA placements in Sweden (Stockholm & remote)
+Java / Fullstack YH students
 
-📄 License
+LIA seekers in Sweden
+
+Anyone preparing long-term internships via proactive outreach
+
+📌 Future Ideas
+
+Company contact history & follow-up tracking
+
+Calendar reminders
+
+GUI or tray-based monitor
+
+Export to Notion / CSV
+
+Support for other YH programs
+
+📜 License
 
 Personal / educational use.
-Not intended for mass automation or commercial job scraping.
-
+Adapt freely for your own LIA search.
