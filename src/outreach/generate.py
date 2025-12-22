@@ -304,3 +304,53 @@ def write_cv_highlights_docx(folder: Path, cfg: AppConfig, company: Company, p: 
     path = folder / "cv_highlights.docx"
     doc.save(str(path))
     return path
+
+def write_linkedin_global_checklist(cfg: AppConfig, folder: Path) -> Path:
+    """
+    Creates a global, manual LinkedIn checklist. This is NOT scraping.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "linkedin_checklist.txt"
+
+    if not getattr(cfg, "linkedin", None) or not cfg.linkedin.enabled:
+        path.write_text("LinkedIn manual checklist is disabled in config.yaml\n", encoding="utf-8")
+        return path
+
+    lines = []
+    lines.append("LINKEDIN MANUAL CHECKLIST (NO AUTOMATION)\n")
+    lines.append("1) Open LinkedIn → Jobs\n")
+    lines.append("2) Paste each query below into the search box\n")
+    lines.append("3) Filter: Location = Stockholm (or Remote if relevant)\n")
+    lines.append("4) Filter: Date posted = Past week (or 24h if you check daily)\n")
+    lines.append("5) Save interesting posts + copy link into your tracking notes\n")
+    lines.append("")
+    lines.append("Search queries:\n")
+    for q in (cfg.linkedin.queries or []):
+        lines.append(f"- {q}")
+    lines.append("")
+    lines.append("Tip: Also try replacing 'LIA' with 'praktik' and 'internship'.\n")
+
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
+def write_linkedin_company_checklist(folder: Path, company_name: str, extra_queries: List[str]) -> Path:
+    """
+    Company-specific LinkedIn checklist + direct company-name search prompts.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "linkedin_manual_check.txt"
+
+    lines = []
+    lines.append("LINKEDIN (MANUAL) — COMPANY CHECK\n")
+    lines.append(f"Company: {company_name}\n")
+    lines.append("1) LinkedIn → Jobs → search company name + LIA/praktik\n")
+    lines.append("2) LinkedIn → Search posts → company name + 'LIA' / 'praktik'\n")
+    lines.append("3) Check company page → Jobs section\n")
+    lines.append("")
+    lines.append("Copy/paste searches:\n")
+    for q in extra_queries:
+        lines.append(f"- {q}")
+
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path

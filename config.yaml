@@ -48,6 +48,21 @@ search:
     - "test automation"
     - SDET
 
+linkedin:
+  enabled: true
+  queries:
+    - 'LIA Java Stockholm'
+    - 'LIA Javautvecklare Stockholm'
+    - 'LIA backend Java Stockholm'
+    - 'LIA fullstack Java Stockholm'
+    - 'praktik Java Stockholm'
+    - 'praktik javautvecklare Stockholm'
+    - 'internship Java Stockholm'
+    - 'internship backend Java Stockholm'
+    - 'LIA distans Java'
+    - 'praktik distans Java'
+
+
   not_lia_terms:
     - tillsvidare
     - heltid

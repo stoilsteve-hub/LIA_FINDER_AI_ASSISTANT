@@ -17,6 +17,9 @@ from src.outreach.generate import (
     write_linkedin_dm_txt,
     write_personligt_brev_docx,
     write_cv_highlights_docx,
+    # NEW: LinkedIn manual awareness (no scraping)
+    write_linkedin_global_checklist,
+    write_linkedin_company_checklist,
 )
 
 
@@ -32,6 +35,11 @@ def main() -> None:
 
     base = Path(cfg.output.applications_dir)
     base.mkdir(parents=True, exist_ok=True)
+
+    # NEW: global LinkedIn checklist in /data (manual)
+    data_dir = Path(cfg.output.data_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    write_linkedin_global_checklist(cfg, data_dir)
 
     cv_src = Path("assets") / "cv.pdf"
 
@@ -54,6 +62,18 @@ def main() -> None:
         dm = draft_linkedin_dm_sv(cfg, c, profile)
         write_linkedin_dm_txt(folder, dm)
 
+        # NEW: company-specific LinkedIn manual checklist (copy/paste searches)
+        company_queries = [
+            f"{c.name} LIA",
+            f"{c.name} praktik",
+            f"{c.name} internship",
+            f"{c.name} Java",
+            f"{c.name} Javautvecklare",
+            f"{c.name} backend",
+            f"{c.name} fullstack",
+        ]
+        write_linkedin_company_checklist(folder, c.name, company_queries)
+
         # Letters: short + standard
         write_personligt_brev_docx(folder, cfg, c, profile, variant="kort")
         write_personligt_brev_docx(folder, cfg, c, profile, variant="standard")
@@ -62,6 +82,8 @@ def main() -> None:
         write_cv_highlights_docx(folder, cfg, c, profile)
 
         print(f"Generated outreach pack for: {c.name} -> {folder}")
+
+    print(f"\nGlobal LinkedIn checklist saved to: {data_dir / 'linkedin_checklist.txt'}")
 
 
 if __name__ == "__main__":

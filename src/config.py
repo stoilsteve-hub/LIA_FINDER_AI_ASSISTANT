@@ -24,6 +24,14 @@ class QueryConfig:
 
 
 @dataclass(frozen=True)
+class LinkedInConfig:
+    enabled: bool = True
+    queries: List[str] = None
+    strict: bool = False
+    not_lia_terms: List[str] = None
+
+
+@dataclass(frozen=True)
 class SearchConfig:
     locations: List[str]
     remote_ok: bool
@@ -42,7 +50,7 @@ class SearchConfig:
 
 @dataclass(frozen=True)
 class TargetConfig:
-    desired_start: str  # e.g. "2026-10"
+    desired_start: str  # e.g. "2026-10" or "oktober 2026"
 
 
 @dataclass(frozen=True)
@@ -67,6 +75,7 @@ class AppConfig:
     search: SearchConfig
     lia: LIAConfig
     output: OutputConfig
+    linkedin: LinkedInConfig
 
 
 # -----------------------------
@@ -74,29 +83,51 @@ class AppConfig:
 # -----------------------------
 
 def load_config(path: str) -> AppConfig:
-    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
-    strict = StrictConfig(**raw["search"].get("strict", {}))
-    query = QueryConfig(**raw["search"].get("query", {}))
+    # ---- search ----
+    raw_search = raw.get("search", {}) or {}
+
+    strict = StrictConfig(**(raw_search.get("strict", {}) or {}))
+    query = QueryConfig(**(raw_search.get("query", {}) or {}))
 
     search = SearchConfig(
-        locations=raw["search"]["locations"],
-        remote_ok=raw["search"]["remote_ok"],
-        lia_terms=raw["search"]["lia_terms"],
-        java_terms=raw["search"]["java_terms"],
-        not_lia_terms=raw["search"]["not_lia_terms"],
+        locations=list(raw_search.get("locations", []) or []),
+        remote_ok=bool(raw_search.get("remote_ok", True)),
+        lia_terms=list(raw_search.get("lia_terms", []) or []),
+        java_terms=list(raw_search.get("java_terms", []) or []),
+        not_lia_terms=list(raw_search.get("not_lia_terms", []) or []),
         strict=strict,
         query=query,
     )
 
-    target = TargetConfig(**raw["lia"].get("target", {}))
+    # ---- linkedin ----
+    raw_linkedin = raw.get("linkedin", {}) or {}
+    linkedin = LinkedInConfig(
+        enabled=bool(raw_linkedin.get("enabled", True)),
+        queries=list(raw_linkedin.get("queries", []) or []),
+        strict=bool(raw_linkedin.get("strict", False)),
+        not_lia_terms=list(raw_linkedin.get("not_lia_terms", []) or []),
+    )
+
+    # ---- lia ----
+    raw_lia = raw.get("lia", {}) or {}
+    raw_target = raw_lia.get("target", {}) or {}
+    target = TargetConfig(
+        desired_start=str(raw_target.get("desired_start", "oktober 2026"))
+    )
 
     lia = LIAConfig(
-        start_date=raw["lia"]["start_date"],
-        end_date=raw["lia"]["end_date"],
+        start_date=str(raw_lia.get("start_date", "")),
+        end_date=str(raw_lia.get("end_date", "")),
         target=target,
     )
 
-    output = OutputConfig(**raw["output"])
+    # ---- output ----
+    raw_output = raw.get("output", {}) or {}
+    output = OutputConfig(
+        data_dir=str(raw_output.get("data_dir", "data")),
+        applications_dir=str(raw_output.get("applications_dir", "data/applications")),
+    )
 
-    return AppConfig(search=search, lia=lia, output=output)
+    return AppConfig(search=search, lia=lia, output=output, linkedin=linkedin)
