@@ -1,0 +1,20 @@
+search:
+  keywords:
+    - LIA
+    - praktik
+    - internship
+    - "YH praktik"
+    - Java
+    - Java developer
+    - Javautvecklare
+  locations:
+    - Stockholm
+  remote_ok: true
+
+lia:
+  start_date: 2026-10-12
+  end_date: 2026-03-12
+
+output:
+  data_dir: data
+  applications_dir: data/applications
