@@ -1,14 +1,79 @@
 search:
+  # Unified keywords (English + Swedish)
+  # Goal: ONLY LIA / praktik roles AND ONLY Java / JVM related
   keywords:
+    # --- LIA / Internship terms ---
     - LIA
     - praktik
+    - praktikplats
+    - "lärande i arbete"
+    - YH
+    - yrkeshögskola
     - internship
-    - "YH praktik"
+    - intern
+    - trainee
+    - "work placement"
+
+    # --- Java / JVM core ---
     - Java
-    - Java developer
-    - Javautvecklare
+    - JVM
+    - Spring
+    - "Spring Boot"
+    - "Spring Security"
+    - "Spring Data"
+    - Hibernate
+    - JPA
+    - JDBC
+    - Maven
+    - Gradle
+    - Kotlin
+
+    # --- Backend / Software development ---
+    - backend
+    - backendutvecklare
+    - "backend developer"
+    - systemutvecklare
+    - javautvecklare
+    - "software developer"
+    - "software engineer"
+
+    # --- Architecture / APIs ---
+    - microservice
+    - microservices
+    - mikroservice
+    - mikroservicar
+    - REST
+    - API
+
+    # --- Cloud / DevOps (Java-centric) ---
+    - Docker
+    - Kubernetes
+    - CI/CD
+    - cloud
+    - moln
+    - AWS
+    - Azure
+
+    # --- Testing / QA automation (Java) ---
+    - JUnit
+    - Selenium
+    - testautomation
+    - testautomatisering
+    - "test automation"
+    - SDET
+
+    # --- Messaging / integration ---
+    - Kafka
+    - RabbitMQ
+
+    # --- Databases ---
+    - SQL
+    - PostgreSQL
+    - MySQL
+
   locations:
     - Stockholm
+
   remote_ok: true
 
 lia:

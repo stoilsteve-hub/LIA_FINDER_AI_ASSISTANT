@@ -9,41 +9,138 @@ from src.config import AppConfig
 from src.discovery.web_sources import Source
 from src.models import Listing
 
-LIA_TERMS = ["lia", "praktik", "lärande i arbete", "yh", "yrkeshögskola", "internship", "trainee"]
+# -------------------------------------------------
+# HARD FILTER TERMS (English + Swedish combined)
+# -------------------------------------------------
 
+# Must clearly be LIA / internship
+LIA_TERMS = [
+    # Swedish
+    "lia",
+    "praktik",
+    "praktikplats",
+    "lärande i arbete",
+    "yh",
+    "yrkeshögskola",
+
+    # English
+    "internship",
+    "intern",
+    "trainee",
+    "work placement",
+]
+
+# Must clearly be Java / JVM related
+JAVA_TERMS = [
+    "java",
+    "jvm",
+    "spring",
+    "spring boot",
+    "spring security",
+    "spring data",
+    "hibernate",
+    "jpa",
+    "jdbc",
+    "maven",
+    "gradle",
+    "kotlin",
+
+    # backend / architecture
+    "backend",
+    "backendutvecklare",
+    "systemutvecklare",
+    "javautvecklare",
+    "microservice",
+    "microservices",
+    "mikroservice",
+    "mikroservicar",
+    "rest",
+    "api",
+
+    # integration / messaging
+    "kafka",
+    "rabbitmq",
+
+    # testing / QA
+    "junit",
+    "selenium",
+    "test automation",
+    "testautomatisering",
+    "sdet",
+]
+
+# Clear signals it is NOT an LIA
+NOT_LIA_TERMS = [
+    # Swedish
+    "tillsvidare",
+    "heltid",
+    "fast anställning",
+    "senior",
+    "lead",
+    "principal",
+
+    # English
+    "full-time",
+    "permanent",
+    "senior developer",
+]
+
+
+# -------------------------------------------------
+# QUERY BUILDER
+# -------------------------------------------------
 
 def _build_queries(cfg: AppConfig) -> list[str]:
+    """
+    Multiple focused queries give much better recall
+    than one large query.
+    """
     locations = cfg.search.locations or ["Stockholm"]
-    loc_part = " OR ".join(locations)
+    loc = " ".join(locations)
 
-    base = [
-        f"LIA {loc_part}",
-        f"praktik {loc_part}",
-        f"\"lärande i arbete\" {loc_part}",
-        f"yrkeshögskola {loc_part}",
-        f"internship {loc_part}",
+    queries = [
+        f"LIA Java {loc}",
+        f"praktik Java {loc}",
+        f"\"lärande i arbete\" Java {loc}",
+        f"yrkeshögskola Java {loc}",
+        f"internship Java {loc}",
+        f"LIA Spring Boot {loc}",
+        f"praktik Spring Boot {loc}",
+        f"LIA backend Java {loc}",
+        f"praktik backend Java {loc}",
+        f"LIA Kotlin {loc}",
+        f"LIA microservices Java {loc}",
+        f"LIA API Java {loc}",
+        f"LIA testautomation Java {loc}",
     ]
-    if cfg.search.remote_ok:
-        base.extend(
-            [
-                "LIA distans",
-                "praktik distans",
-                "internship remote",
-                "hybrid praktik",
-            ]
-        )
-    return base
 
+    if cfg.search.remote_ok:
+        queries.extend([
+            "LIA Java distans",
+            "praktik Java distans",
+            "internship Java remote",
+            "LIA backend Java remote",
+            "LIA Spring Boot remote",
+        ])
+
+    return queries
+
+
+def _contains_any(text: str, terms: list[str]) -> bool:
+    t = text.lower()
+    return any(term in t for term in terms)
+
+
+# -------------------------------------------------
+# MAIN FETCH FUNCTION
+# -------------------------------------------------
 
 def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
     api_key = os.getenv("JOBTECH_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError(
-            "Missing JOBTECH_API_KEY. Create a .env file in the project root and set JOBTECH_API_KEY=..."
+            "Missing JOBTECH_API_KEY. Create a .env file and set JOBTECH_API_KEY=..."
         )
-
-    listings: List[Listing] = []
-    queries = _build_queries(cfg)
 
     headers = {
         "Accept": "application/json",
@@ -51,9 +148,12 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
         "User-Agent": "LIA_FINDER_AI_ASSISTANT/1.0",
     }
 
+    listings: List[Listing] = []
+    queries = _build_queries(cfg)
+
     with httpx.Client(headers=headers, timeout=25.0) as client:
         for s in sources:
-            if s.kind != "jobtech_jobsearch":
+            if getattr(s, "kind", "") != "jobtech_jobsearch":
                 continue
 
             search_url = f"{s.base_url}/search"
@@ -63,10 +163,10 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
                 resp.raise_for_status()
                 data = resp.json()
 
-                hits = data.get("hits", []) or []
-                for h in hits:
+                for h in data.get("hits", []) or []:
                     title = h.get("headline") or h.get("title") or ""
                     employer = (h.get("employer") or {}).get("name") or ""
+
                     workplace = h.get("workplace_address") or {}
                     location = workplace.get("municipality") or workplace.get("city") or ""
 
@@ -75,15 +175,22 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
                     url_ = webpage_url or (f"{s.base_url}/ad/{ad_id}" if ad_id else "")
 
                     desc = None
-                    desc_obj = h.get("description")
-                    if isinstance(desc_obj, dict):
-                        desc = desc_obj.get("text")
-                    elif isinstance(desc_obj, str):
-                        desc = desc_obj
+                    d = h.get("description")
+                    if isinstance(d, dict):
+                        desc = d.get("text")
+                    elif isinstance(d, str):
+                        desc = d
 
-                    # HARD FILTER: must look like LIA/praktik
-                    text = f"{title} {desc or ''}".lower()
-                    if not any(term in text for term in LIA_TERMS):
+                    combined = f"{title}\n{desc or ''}".lower()
+
+                    # Exclude obvious non-LIA roles
+                    if _contains_any(combined, NOT_LIA_TERMS):
+                        continue
+
+                    # HARD GATES: MUST be LIA AND MUST be Java
+                    if not _contains_any(combined, LIA_TERMS):
+                        continue
+                    if not _contains_any(combined, JAVA_TERMS):
                         continue
 
                     if title and url_:
