@@ -1,8 +1,10 @@
 search:
-  # Unified keywords (English + Swedish)
-  # Goal: ONLY LIA / praktik roles AND ONLY Java / JVM related
-  keywords:
-    # --- LIA / Internship terms ---
+  locations:
+    - Stockholm
+  remote_ok: true
+
+  # Multi-query strategy (we'll combine these)
+  lia_terms:
     - LIA
     - praktik
     - praktikplats
@@ -14,7 +16,7 @@ search:
     - trainee
     - "work placement"
 
-    # --- Java / JVM core ---
+  java_terms:
     - Java
     - JVM
     - Spring
@@ -27,34 +29,18 @@ search:
     - Maven
     - Gradle
     - Kotlin
-
-    # --- Backend / Software development ---
     - backend
     - backendutvecklare
-    - "backend developer"
     - systemutvecklare
     - javautvecklare
-    - "software developer"
-    - "software engineer"
-
-    # --- Architecture / APIs ---
     - microservice
     - microservices
     - mikroservice
     - mikroservicar
     - REST
     - API
-
-    # --- Cloud / DevOps (Java-centric) ---
-    - Docker
-    - Kubernetes
-    - CI/CD
-    - cloud
-    - moln
-    - AWS
-    - Azure
-
-    # --- Testing / QA automation (Java) ---
+    - Kafka
+    - RabbitMQ
     - JUnit
     - Selenium
     - testautomation
@@ -62,23 +48,35 @@ search:
     - "test automation"
     - SDET
 
-    # --- Messaging / integration ---
-    - Kafka
-    - RabbitMQ
+  not_lia_terms:
+    - tillsvidare
+    - heltid
+    - "fast anställning"
+    - senior
+    - lead
+    - principal
+    - full-time
+    - permanent
 
-    # --- Databases ---
-    - SQL
-    - PostgreSQL
-    - MySQL
+  # Strictness controls
+  strict:
+    # If true, require LIA/praktik terms to appear in TITLE (not just description).
+    title_must_contain_lia: true
 
-  locations:
-    - Stockholm
+    # If true, require Java/JVM terms to appear in TITLE OR description (recommended true).
+    must_contain_java: true
 
-  remote_ok: true
+  # Query building knobs
+  query:
+    max_per_query: 50
+    add_remote_queries: true
 
 lia:
-  start_date: 2026-10-12
+  start_date: 2026-10
   end_date: 2026-03-12
+  target:
+    desired_start: 2026-10
+
 
 output:
   data_dir: data

@@ -9,96 +9,18 @@ from src.config import AppConfig
 from src.discovery.web_sources import Source
 from src.models import Listing
 
-# -------------------------------------------------
-# HARD FILTER TERMS (English + Swedish combined)
-# -------------------------------------------------
 
-# Must clearly be LIA / internship
-LIA_TERMS = [
-    # Swedish
-    "lia",
-    "praktik",
-    "praktikplats",
-    "lärande i arbete",
-    "yh",
-    "yrkeshögskola",
+def _contains_any(text: str, terms: list[str]) -> bool:
+    t = text.lower()
+    return any(term.lower() in t for term in terms)
 
-    # English
-    "internship",
-    "intern",
-    "trainee",
-    "work placement",
-]
-
-# Must clearly be Java / JVM related
-JAVA_TERMS = [
-    "java",
-    "jvm",
-    "spring",
-    "spring boot",
-    "spring security",
-    "spring data",
-    "hibernate",
-    "jpa",
-    "jdbc",
-    "maven",
-    "gradle",
-    "kotlin",
-
-    # backend / architecture
-    "backend",
-    "backendutvecklare",
-    "systemutvecklare",
-    "javautvecklare",
-    "microservice",
-    "microservices",
-    "mikroservice",
-    "mikroservicar",
-    "rest",
-    "api",
-
-    # integration / messaging
-    "kafka",
-    "rabbitmq",
-
-    # testing / QA
-    "junit",
-    "selenium",
-    "test automation",
-    "testautomatisering",
-    "sdet",
-]
-
-# Clear signals it is NOT an LIA
-NOT_LIA_TERMS = [
-    # Swedish
-    "tillsvidare",
-    "heltid",
-    "fast anställning",
-    "senior",
-    "lead",
-    "principal",
-
-    # English
-    "full-time",
-    "permanent",
-    "senior developer",
-]
-
-
-# -------------------------------------------------
-# QUERY BUILDER
-# -------------------------------------------------
 
 def _build_queries(cfg: AppConfig) -> list[str]:
-    """
-    Multiple focused queries give much better recall
-    than one large query.
-    """
     locations = cfg.search.locations or ["Stockholm"]
     loc = " ".join(locations)
 
-    queries = [
+    # Focused LIA+Java combos (best recall)
+    base = [
         f"LIA Java {loc}",
         f"praktik Java {loc}",
         f"\"lärande i arbete\" Java {loc}",
@@ -111,29 +33,29 @@ def _build_queries(cfg: AppConfig) -> list[str]:
         f"LIA Kotlin {loc}",
         f"LIA microservices Java {loc}",
         f"LIA API Java {loc}",
-        f"LIA testautomation Java {loc}",
+        f"LIA test automation Java {loc}",
+        f"LIA testautomatisering Java {loc}",
     ]
 
-    if cfg.search.remote_ok:
-        queries.extend([
+    if cfg.search.remote_ok and cfg.search.query.add_remote_queries:
+        base += [
             "LIA Java distans",
             "praktik Java distans",
             "internship Java remote",
             "LIA backend Java remote",
             "LIA Spring Boot remote",
-        ])
+            "LIA Java hybrid",
+        ]
 
-    return queries
+    # Deduplicate while preserving order
+    seen = set()
+    uniq = []
+    for q in base:
+        if q not in seen:
+            seen.add(q)
+            uniq.append(q)
+    return uniq
 
-
-def _contains_any(text: str, terms: list[str]) -> bool:
-    t = text.lower()
-    return any(term in t for term in terms)
-
-
-# -------------------------------------------------
-# MAIN FETCH FUNCTION
-# -------------------------------------------------
 
 def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
     api_key = os.getenv("JOBTECH_API_KEY", "").strip()
@@ -148,8 +70,17 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
         "User-Agent": "LIA_FINDER_AI_ASSISTANT/1.0",
     }
 
-    listings: List[Listing] = []
     queries = _build_queries(cfg)
+    limit = cfg.search.query.max_per_query
+
+    # Debug counters (helps tuning)
+    kept = 0
+    dropped_not_lia = 0
+    dropped_not_java = 0
+    dropped_not_lia_title = 0
+    dropped_not_lia_terms = 0
+
+    listings: List[Listing] = []
 
     with httpx.Client(headers=headers, timeout=25.0) as client:
         for s in sources:
@@ -159,7 +90,7 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
             search_url = f"{s.base_url}/search"
 
             for q in queries:
-                resp = client.get(search_url, params={"q": q, "limit": 50})
+                resp = client.get(search_url, params={"q": q, "limit": limit})
                 resp.raise_for_status()
                 data = resp.json()
 
@@ -181,17 +112,29 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
                     elif isinstance(d, str):
                         desc = d
 
-                    combined = f"{title}\n{desc or ''}".lower()
+                    title_l = title.lower()
+                    combined_l = f"{title}\n{desc or ''}".lower()
 
-                    # Exclude obvious non-LIA roles
-                    if _contains_any(combined, NOT_LIA_TERMS):
+                    # Exclude obvious non-LIA/permanent jobs
+                    if _contains_any(combined_l, cfg.search.not_lia_terms):
+                        dropped_not_lia += 1
                         continue
 
-                    # HARD GATES: MUST be LIA AND MUST be Java
-                    if not _contains_any(combined, LIA_TERMS):
-                        continue
-                    if not _contains_any(combined, JAVA_TERMS):
-                        continue
+                    # LIA gate
+                    if cfg.search.strict.title_must_contain_lia:
+                        if not _contains_any(title_l, cfg.search.lia_terms):
+                            dropped_not_lia_title += 1
+                            continue
+                    else:
+                        if not _contains_any(combined_l, cfg.search.lia_terms):
+                            dropped_not_lia_terms += 1
+                            continue
+
+                    # Java gate
+                    if cfg.search.strict.must_contain_java:
+                        if not _contains_any(combined_l, cfg.search.java_terms):
+                            dropped_not_java += 1
+                            continue
 
                     if title and url_:
                         listings.append(
@@ -204,6 +147,14 @@ def fetch_listings(cfg: AppConfig, sources: List[Source]) -> List[Listing]:
                                 source=s.name,
                             )
                         )
+                        kept += 1
+
+    # Print debug summary (super useful while tuning)
+    print(
+        f"Filter summary: kept={kept}, dropped_not_lia={dropped_not_lia}, "
+        f"dropped_not_java={dropped_not_java}, dropped_not_lia_title={dropped_not_lia_title}, "
+        f"dropped_not_lia_terms={dropped_not_lia_terms}"
+    )
 
     # Deduplicate by URL
     seen = set()

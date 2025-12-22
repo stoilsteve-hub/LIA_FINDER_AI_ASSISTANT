@@ -1,0 +1,23 @@
+companies:
+  - name: "Example Consulting AB"
+    location: "Stockholm/Remote"
+    website: "https://example.com"
+    careers: "https://example.com/careers"
+    contact_email: ""
+    stack_hints:
+      - Java
+      - Spring Boot
+      - React
+    notes: "Konsultbolag med backend + frontend team."
+
+  - name: "Example Product Company"
+    location: "Stockholm"
+    website: "https://example.org"
+    careers: ""
+    contact_email: ""
+    stack_hints:
+      - Java
+      - Microservices
+      - Kubernetes
+      - React
+    notes: "Produktbolag. Bra för LIA HT26."
