@@ -15,7 +15,7 @@ def score_listings(cfg: AppConfig, listings: List[Listing]) -> List[ScoredListin
 
         text = f"{l.title} {l.location} {l.description or ''}".lower()
 
-        for kw in cfg.search.keywords:
+        for kw in cfg.search.java_terms:
             if kw.lower() in text:
                 score += 10
                 reasons.append(f"Matched keyword: {kw}")
